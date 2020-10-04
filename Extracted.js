@@ -1,47 +1,67 @@
-var Keys = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
-
 function Decrypt(value) {
-    var n = value.substr(0, 9)
-        , i = f1(value.substr(9));
+    const keyString = value.substr(0, 9);
+    let encryptedEncodedString = value.substr(9);
+
+    // #region Decoding
+    if ((encryptedEncodedString = encryptedEncodedString.replace(/[ \t\n\f\r]/g, "")).length % 4 == 0) {
+        encryptedEncodedString = encryptedEncodedString.replace(/==?$/, "");
+        if (encryptedEncodedString.length % 4 == 1 || /[^+/0-9A-Za-z]/.test(encryptedEncodedString)) {
+            return null;
+        }
+    }
+
+    let encryptedDecodedString = "";
+
+    let offset = 0;
+    for (let index = 0; index < encryptedEncodedString.length; index++) {
+        offset <<= 6;
+
+        const charIndex = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".indexOf(encryptedEncodedString[index]);
+        offset |= charIndex < 0 ? undefined : charIndex;
+
+        if (((index + 1) % 4) == 0) {
+            encryptedDecodedString += String.fromCharCode((16711680 & offset) >> 16);
+            encryptedDecodedString += String.fromCharCode((65280 & offset) >> 8);
+            encryptedDecodedString += String.fromCharCode((255 & offset));
+            offset = remaining = 0;
+        }
+        if (index == encryptedEncodedString.length - 1) {
+            switch (index % 4) {
+                case 1:
+                    offset >>= 4;
+                    encryptedDecodedString += String.fromCharCode(offset);
+                    break;
+                case 2:
+                    offset >>= 2;
+                    encryptedDecodedString += String.fromCharCode((65280 & offset) >> 8);
+                    encryptedDecodedString += String.fromCharCode(((255) & offset));
+                    break;
+            }
+        }
+    }
+
     try {
-        i = decodeURIComponent(i)
-    } catch (err) { }
-    return f2(n, i)
-}
+        encryptedDecodedString = decodeURIComponent(encryptedDecodedString)
+    } catch (err) {
+    }
+    // #endregion
 
-function f1(value) {
-    if ((value = (value = "".concat(value)).replace(/[ \t\n\f\r]/g, "")).length % 4 == 0 && (value = value.replace(/==?$/, "")),
-        value.length % 4 == 1 || /[^+/0-9A-Za-z]/.test(value))
-        return null;
-    for (var x, r, u = "", c = 0, e = 0, f = 0; f < value.length; f++)
-        c <<= 6,
-            c |= (x = value[f],
-                r = void (0),
-                (r = Keys.indexOf(x)) < 0 ? void (0) : r),
-            24 === (e += 6) && (u += String.fromCharCode((16711680 & c) >> 16),
-                u += String.fromCharCode((65280 & c) >> 8),
-                u += String.fromCharCode((255 & c)),
-                c = e = 0);
-    return 12 === e ? (c >>= 4,
-        u += String.fromCharCode(c)) : 18 === e && (c >>= 2,
-            u += String.fromCharCode((65280 & c) >> 8),
-            u += String.fromCharCode(((255) & c))),
-        u
-}
+    // #region Decryption
+    var tmpArray = [...Array(256).keys()];
+    var calculatedIndex = 0;
 
-function f2(t, n) {
-    for (var x, r = [], u = 0, c = "", e = 256, f =0; f < e; f += 1)
-        r[f] = f;
-    for (f = 0; f < e; f += 1)
-        u = ((u + r[f] + t.charCodeAt(f % t.length)) % e),
-            x = r[f],
-            r[f] = r[u],
-            r[u] = x;
-    for (var s = u = f = 0; s < n.length; s += 1)
-        u = (u + r[f = (f + 1) % e]) % e,
-            x = r[f],
-            r[f] = r[u],
-            r[u] = x,
-            c += String.fromCharCode(n.charCodeAt(s) ^ r[(r[f] + r[u]) % e]);
-    return c
+    for (let index = 0; index < 256; index += 1) {
+        calculatedIndex = ((calculatedIndex + tmpArray[index] + keyString.charCodeAt(index % keyString.length)) % 256);
+        tmpArray[calculatedIndex] = [tmpArray[index], tmpArray[index] = tmpArray[calculatedIndex]][0];
+    }
+
+    var decryptedDecodedString = "";
+    for (var s = calculatedIndex = index = 0; s < encryptedDecodedString.length; s += 1) {
+        calculatedIndex = (calculatedIndex + tmpArray[index = (index + 1) % 256]) % 256;
+        tmpArray[calculatedIndex] = [tmpArray[index], tmpArray[index] = tmpArray[calculatedIndex]][0];
+        decryptedDecodedString += String.fromCharCode(encryptedDecodedString.charCodeAt(s) ^ tmpArray[(tmpArray[index] + tmpArray[calculatedIndex]) % 256]);
+    }
+    // #endregion
+
+    return decryptedDecodedString;
 }
