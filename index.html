@@ -1,0 +1,22 @@
+<html>
+
+<head>
+    <title>9Anime Decryption Test</title>
+    <script src='Extracted.js' type='text/javascript'></script>
+    <script>
+        function onBtnClick() {
+            const value = document.getElementById('txtValue').value;
+            document.getElementById('result').textContent = Decrypt(value);
+        }
+    </script>
+</head>
+
+<body>
+    <div>
+        <input id='txtValue' type='text' />
+    </div>
+    <button onclick='onBtnClick()'>Decrypt</button>
+    <div id='result'></div>
+</body>
+
+</html>
